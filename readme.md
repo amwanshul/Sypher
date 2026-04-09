@@ -1,68 +1,258 @@
-# 🤖 Sypher: AI System Controller
 
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+<h1 align="center">🤖 Sypher</h1>
+<h3 align="center">AI System Controller for Windows</h3>
 
-**Sypher** is an advanced, voice-driven AI assistant designed to bridge the gap between Large Language Models and local system execution. It doesn't just "chat"—it sees your screen, hears your voice, and controls your Windows environment to execute complex workflows autonomously.
+<p align="center">
+  <b>From conversation → to execution</b><br>
+  A multi-modal AI agent that <i>sees, hears, thinks, and acts</i>.
+</p>
 
----
-
-## ✨ Core Features
-
-Sypher is built to be a complete autonomous agent for Windows. Its current capabilities include:
-
-- 🎙️ **Multi-Modal Interaction:** Seamlessly switch between voice and text commands with low-latency responses.
-- 🖥️ **Vision Awareness:** Uses OCR and image analysis to "see" your active windows and webcam feed.
-- 📂 **File Operations:** Create, move, delete, and organize files and directories through natural language.
-- 🌐 **Web Intelligence:** Integrated Google Search, live weather reports, and YouTube playback control.
-- 🛠️ **System Management:** Control system volume, brightness, launch any application, and execute shell commands.
-- 🧠 **Contextual Memory:** Persistent storage for user preferences, allowing the AI to learn your habits over time.
-- 📅 **Productivity Suite:** Manage reminders, send messages, and get coding assistance in real-time.
-- 🔒 **Security-First Design:** Sensitive actions require user approval before execution.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue">
+  <img src="https://img.shields.io/badge/Platform-Windows-critical">
+  <img src="https://img.shields.io/badge/AI-Gemini%20Pro-purple">
+  <img src="https://img.shields.io/badge/Architecture-Agentic-green">
+  <img src="https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey">
+</p>
 
 ---
 
-## 🏗️ System Architecture
+# ⚡ What is Sypher?
 
-Sypher operates on a continuous **Agentic Loop** to ensure tasks are completed accurately:
+**Sypher** is a next-generation AI agent that bridges Large Language Models with **real system execution**.
 
-1. **Perception:** Gathers raw data from the Microphone (Audio) and Screen/Webcam (Visuals).
-2. **Reasoning:** Leverages **Gemini Pro** to analyze intent and choose the most effective tool.
-3. **Execution:** Triggers specialized Python scripts in the `actions/` folder to perform system tasks.
-4. **Memory:** Archives the task result to refine future logic and maintain conversation history.
+Unlike traditional assistants, Sypher operates as an **autonomous system controller** capable of:
 
+* Understanding context
+* Making decisions
+* Executing real-world tasks on your machine
 
+> It doesn’t just respond — it **acts**.
 
 ---
 
-## 🚀 Installation & Setup
+# 🧠 Core Experience
 
-### 1. Prerequisites
-- **OS:** Windows 10 or 11 (required for system-level controls).
-- **Python:** Version 3.10 or higher.
-- **Hardware:** A working microphone and (optional) webcam.
+```mermaid
+flowchart LR
+A[🎙️ Voice / 🖥️ Screen] --> B[🧠 Reasoning Engine]
+B --> C[⚙️ Action Modules]
+C --> D[💾 Memory System]
+D --> B
+```
 
-### 2. Get an API Key
-Sypher uses the Google Gemini API. You can get a free key here:
-- [Google AI Studio](https://aistudio.google.com/)
+---
 
-### 3. Setup Instructions
-Open your terminal (PowerShell or CMD) and run the following:
+# 🔥 Key Features
 
-```powershell
-# Clone the repository
-git clone [https://github.com/amwanshul/Sypher.git](https://github.com/amwanshul/Sypher.git)
+## 🎙️ Multi-Modal Interaction
+
+* Voice + text hybrid interface
+* Natural language → real execution
+* Low-latency responses
+
+## 👁️ Vision Awareness
+
+* OCR-based screen understanding
+* Context extraction from active windows
+* Optional webcam perception
+
+## ⚙️ System Control
+
+* Launch apps and execute shell commands
+* Control system volume, brightness, and settings
+* Automate workflows
+
+## 📂 File Automation
+
+* Create, move, delete, and organize files
+* Context-aware file operations
+
+## 🌐 Web Intelligence
+
+* Google Search integration
+* Live weather updates
+* YouTube playback control
+
+## 🧠 Persistent Memory
+
+* Learns user behavior
+* Stores preferences and history
+* Improves over time
+
+## 🔐 Safety System
+
+* Sensitive actions require approval
+* Prevents unintended operations
+
+---
+
+# 🏗️ Architecture
+
+```text
+Perception → Reasoning → Execution → Memory → (Loop)
+```
+
+---
+
+# ⚙️ Installation
+
+## 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/amwanshul/Sypher.git
 cd Sypher
+```
 
-# Create a virtual environment (Isolated Workspace)
+## 2️⃣ Create Virtual Environment
+
+```bash
 python -m venv venv
-
-# Activate the environment
 .\venv\Scripts\activate
+```
 
-# Upgrade pip and install core dependencies
-python -m pip install --upgrade pip
+## 3️⃣ Install Dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
-# Run project-specific setup
+---
+
+# 🔐 API Configuration
+
+Sypher uses a configuration file to manage API keys.
+
+### 📁 Location
+
+```bash
+config/api_keys.json
+```
+
+### 🧾 Add Your API Key
+
+```json
+{
+  "GEMINI_API_KEY": "your_api_key_here"
+}
+```
+
+### 🌐 Get Your API Key
+
+https://aistudio.google.com/
+
+---
+
+⚠️ **Security Note**
+
+* Do NOT commit `api_keys.json`
+* Add it to `.gitignore`
+
+```bash
+config/api_keys.json
+```
+
+---
+
+# ▶️ Run Sypher
+
+### ⚙️ One-Time Setup
+
+```bash
 python setup.py
+```
+
+> ⚠️ Run this **only once** during initial setup.
+> It prepares required configurations and environment.
+
+---
+
+### 🚀 Start Application
+
+```bash
+python main.py
+```
+
+---
+
+# 📁 Project Structure
+
+```text
+Sypher/
+│
+├── actions/        # System action modules
+├── agent/          # Agent orchestration logic
+├── config/         # Configuration files
+│   ├── api_keys.json
+│   └── safety_settings.json
+├── core/           # Core prompts and logic
+├── memory/         # Memory system
+├── security/       # Approval & safety layer
+├── tools/          # Utility tools
+│
+├── main.py
+├── setup.py
+├── ui.py
+├── requirements.txt
+└── README.md
+```
+
+---
+
+# 🧩 Example Workflow
+
+> “Open Chrome, search for AI tools, and save results.”
+
+Sypher will:
+
+1. Understand the command
+2. Break it into steps
+3. Execute system actions
+4. Store context for future use
+
+---
+
+# ⚠️ Limitations
+
+* Windows-only (uses system-level APIs)
+* Requires internet (Gemini API)
+* Performance depends on hardware
+
+---
+
+# 🔮 Roadmap
+
+* Cross-platform support (Linux/macOS)
+* Plugin system for custom actions
+* Local/offline LLM integration
+* Advanced task planning
+* Monitoring dashboard
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome in:
+
+* New action modules
+* Performance improvements
+* Security enhancements
+* UI/UX upgrades
+
+---
+
+# 📜 License
+
+Licensed under **CC BY-NC 4.0**
+
+---
+
+<p align="center">
+⭐ Star the repo if this project impressed you
+</p>
+
+<p align="center">
+Built for execution. Designed for the future.
+</p>
+
+
