@@ -10,24 +10,18 @@ v8 Changes:
 
 import asyncio
 import base64
-import io
 import json
 import re
-import os
 import sys
 import time
 import threading
 import cv2
+import numpy as np
 import mss
 import mss.tools
 import pyaudio
 from pathlib import Path
 
-try:
-    import PIL.Image
-    _PIL_OK = True
-except ImportError:
-    _PIL_OK = False
 
 from google import genai
 from google.genai import types
@@ -125,13 +119,18 @@ def _get_camera_index() -> int:
 
 
 def _to_jpeg(img_bytes: bytes) -> bytes:
-    if not _PIL_OK:
-        return img_bytes
-    img = PIL.Image.open(io.BytesIO(img_bytes)).convert("RGB")
-    img.thumbnail([IMG_MAX_W, IMG_MAX_H], PIL.Image.BILINEAR)
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=JPEG_Q, optimize=False)
-    return buf.getvalue()
+    np_arr = np.frombuffer(img_bytes, np.uint8)
+    decoded = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    h, w = decoded.shape[:2]
+
+    scale = min(IMG_MAX_W / w, IMG_MAX_H / h)
+    if scale < 1.0:
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        decoded = cv2.resize(decoded, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+
+    _, buf = cv2.imencode(".jpg", decoded, [cv2.IMWRITE_JPEG_QUALITY, JPEG_Q])
+    return buf.tobytes()
 
 
 def _capture_screenshot() -> bytes:
@@ -156,13 +155,13 @@ def _capture_camera() -> bytes:
     if not ret or frame is None:
         raise RuntimeError("Could not capture camera frame.")
 
-    if _PIL_OK:
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img = PIL.Image.fromarray(rgb)
-        img.thumbnail([IMG_MAX_W, IMG_MAX_H], PIL.Image.BILINEAR)
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=JPEG_Q, optimize=False)
-        return buf.getvalue()
+    # Use cv2 to scale if necessary before encoding to JPEG
+    h, w = frame.shape[:2]
+    scale = min(IMG_MAX_W / w, IMG_MAX_H / h)
+    if scale < 1.0:
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
 
     _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, JPEG_Q])
     return buf.tobytes()
@@ -363,7 +362,7 @@ def screen_process(
             print("[ScreenProcess] 📷 Camera captured")
         else:
             image_bytes = _capture_screenshot()
-            mime_type   = "image/jpeg" if _PIL_OK else "image/png"
+            mime_type   = "image/jpeg"
             print("[ScreenProcess] 🖥️ Screen captured")
     except Exception as e:
         import traceback; traceback.print_exc()
