@@ -1,0 +1,5 @@
+🧪 Add tests for `_fallback_plan`
+
+🎯 **What:** The `_fallback_plan` function in `agent/planner.py` lacked test coverage.
+📊 **Coverage:** A new test file `tests/test_planner.py` covers the function with a standard input string and an edge case (empty string). The assertions are flexible against dictionary changes by focusing on nested critical keys (`tool` and `parameters`).
+✨ **Result:** Increased unit test coverage and confidence when refactoring the core planner loop.

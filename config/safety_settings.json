@@ -1,0 +1,5 @@
+{
+  "allow_untrusted_code_execution": false,
+  "require_confirmation_for_untrusted_code": true,
+  "require_confirmation_for_file_delete": true
+}
