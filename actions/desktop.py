@@ -165,7 +165,7 @@ def set_wallpaper(image_path: str) -> str:
     path = Path(image_path).expanduser().resolve()
     if not path.exists():
         return f"Image not found: {image_path}"
-    if path.suffix.lower() not in [".jpg", ".jpeg", ".png", ".bmp"]:
+    if path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".bmp"}:
         return f"Unsupported format: {path.suffix}. Use jpg, png or bmp."
 
     try:
