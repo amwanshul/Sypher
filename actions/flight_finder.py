@@ -21,6 +21,7 @@ import re
 import sys
 import subprocess
 import platform
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -106,13 +107,17 @@ def _parse_date(raw: str) -> str:
 
 
 
+@dataclass
+class FlightSearchRequest:
+    origin:      str
+    destination: str
+    date:        str
+    return_date: str | None = None
+    passengers:  int        = 1
+    cabin:       str        = "economy"
+
 def _build_google_flights_url(
-    origin:      str,
-    destination: str,
-    date:        str,
-    return_date: str | None = None,
-    passengers:  int        = 1,
-    cabin:       str        = "economy",
+    request: FlightSearchRequest
 ) -> str:
     """
     Builds a Google Flights URL with pre-filled search parameters.
@@ -124,19 +129,19 @@ def _build_google_flights_url(
         "business": "3",
         "first":    "4",
     }
-    cabin_code = cabin_map.get(cabin.lower(), "1")
+    cabin_code = cabin_map.get(request.cabin.lower(), "1")
 
     base = "https://www.google.com/travel/flights"
 
-    if return_date:
+    if request.return_date:
         url = (
-            f"{base}?q=Flights+from+{origin}+to+{destination}"
-            f"+on+{date}+returning+{return_date}"
+            f"{base}?q=Flights+from+{request.origin}+to+{request.destination}"
+            f"+on+{request.date}+returning+{request.return_date}"
             f"&curr=TRY"
         )
     else:
         url = (
-            f"{base}?q=Flights+from+{origin}+to+{destination}+on+{date}"
+            f"{base}?q=Flights+from+{request.origin}+to+{request.destination}+on+{request.date}"
             f"&curr=TRY"
         )
 
@@ -145,12 +150,7 @@ def _build_google_flights_url(
 
 
 def _search_flights_browser(
-    origin:      str,
-    destination: str,
-    date:        str,
-    return_date: str | None,
-    passengers:  int,
-    cabin:       str,
+    request: FlightSearchRequest
 ) -> tuple[str, str]:
     """
     Opens Google Flights in browser, waits for results, scrapes text.
@@ -159,9 +159,7 @@ def _search_flights_browser(
     from actions.browser_control import browser_control
     import time
 
-    url = _build_google_flights_url(
-        origin, destination, date, return_date, passengers, cabin
-    )
+    url = _build_google_flights_url(request)
 
     print(f"[FlightFinder] 🌐 Opening: {url}")
     browser_control({"action": "go_to", "url": url})
@@ -387,9 +385,15 @@ def flight_finder(
 
     try:
    
-        raw_text, page_url = _search_flights_browser(
-            origin, destination, date, return_date, passengers, cabin
+        request = FlightSearchRequest(
+            origin=origin,
+            destination=destination,
+            date=date,
+            return_date=return_date,
+            passengers=passengers,
+            cabin=cabin
         )
+        raw_text, page_url = _search_flights_browser(request)
 
         if not raw_text:
             return "Could not retrieve flight data, sir. The page may not have loaded."
