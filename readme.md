@@ -180,21 +180,19 @@ python main.py
 ```text
 Sypher/
 │
-├── actions/        # System action modules
-├── agent/          # Agent orchestration logic
-├── config/         # Configuration files
-│   ├── api_keys.json
-│   └── safety_settings.json
-├── core/           # Core prompts and logic
-├── memory/         # Memory system
-├── security/       # Approval & safety layer
-├── tools/          # Utility tools
+├── actions/        # System action modules (browser, cmd, desktop, etc.)
+├── agent/          # Agent orchestration logic (planner, executor, queue)
+├── config/         # Configuration and safety settings
+├── core/           # Core prompts and reasoning logic
+├── memory/         # Persistent memory and config management
+├── security/       # Approval and safety layer
+├── tests/          # Comprehensive unit and integration tests
+├── tools/          # Utility tools and schema registration
 │
-├── main.py
-├── setup.py
-├── ui.py
-├── requirements.txt
-└── README.md
+├── main.py         # Application entry point
+├── setup.py        # Environment setup script
+├── ui.py           # User interface logic
+└── requirements.txt # Project dependencies
 ```
 
 ---
@@ -248,8 +246,6 @@ All commit messages and Pull Request titles must use one of the following prefix
 | `chore:` | **Routine tasks** (updating dependencies, .gitignore). | `chore: add api_keys to gitignore` |
 | `test:` | Adding or fixing **tests**. | `test: add unit tests for login logic` |
 
-Our GitHub Actions will automatically verify that your contributions follow these standards.
-
 ---
 
 # 📜 License
@@ -265,5 +261,3 @@ Licensed under **CC BY-NC 4.0**
 <p align="center">
 Built for execution. Designed for the future.
 </p>
-
-
