@@ -1,0 +1,9 @@
+🧪 Add test coverage for send_message.py
+
+🎯 **What:** The testing gap in `actions/send_message.py` has been completely addressed by introducing a comprehensive test suite in `tests/actions/test_send_message.py`.
+📊 **Coverage:** The new tests cover:
+- Validation logic for missing parameters (`receiver` and `message_text`).
+- Routing logic inside `send_message` testing that different platform arguments correctly trigger `_send_whatsapp`, `_send_instagram`, `_send_telegram`, or `_send_generic`.
+- Helper and internal functions like `_open_app`, `_search_contact`, `_type_and_send` with extensive assertions using mocked `pyautogui`, `time.sleep`, and `webbrowser` to emulate GUI interactions.
+- Mocking edge cases and exception handling for UI and execution failures.
+✨ **Result:** Test coverage for `actions/send_message.py` goes from 0% to nearly 100%, vastly increasing code reliability and allowing confident refactoring of the visual element-based messaging action.
