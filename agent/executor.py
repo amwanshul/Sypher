@@ -124,19 +124,13 @@ def _inject_context(params: dict, tool: str, step_results: dict, goal: str = "")
                 print(f"[Executor] 💉 Injected + translated content")
 
     return params
+
 def _detect_language(text: str) -> str:
-    import google.generativeai as genai
-    genai.configure(api_key=_get_api_key())
-    model = genai.GenerativeModel("gemini-2.5-flash-lite")
-    try:
-        response = model.generate_content(
-            f"What language is this text written in? "
-            f"Reply with ONLY the language name in English (e.g. Turkish, English, French).\n\n"
-            f"Text: {text[:200]}"
-        )
-        return response.text.strip()
-    except Exception:
-        return "English"
+    text = text.lower()
+    tr_chars = set("çğıöşü")
+    if any(c in tr_chars for c in text):
+        return "tr"
+    return "en"
 
 
 def _translate_to_goal_language(content: str, goal: str) -> str:
