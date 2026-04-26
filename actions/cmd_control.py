@@ -1,4 +1,5 @@
 import subprocess
+import shlex
 import sys
 import json
 import re
@@ -143,13 +144,20 @@ def _run_silent(command: str, timeout: int = 20) -> str:
                     timeout=timeout, cwd=str(Path.home())
                 )
         else:
-            shell = "/bin/zsh" if platform == "macos" else "/bin/bash"
-            result = subprocess.run(
-                command, shell=True, executable=shell,
-                capture_output=True, text=True,
-                errors="replace", timeout=timeout,
-                cwd=str(Path.home())
-            )
+            try:
+                cmd_args = shlex.split(command)
+                if not cmd_args:
+                    return "Command was empty after parsing."
+                result = subprocess.run(
+                    cmd_args,
+                    capture_output=True, text=True,
+                    errors="replace", timeout=timeout,
+                    cwd=str(Path.home())
+                )
+            except ValueError as e:
+                return f"Command parsing error: {e}"
+            except OSError as e:
+                return f"Command not found: {e.filename}"
 
         output = result.stdout.strip()
         error  = result.stderr.strip()
