@@ -7,6 +7,8 @@
 # Built-in: wallpaper change, icon arrangement, desktop cleanup, organize by type
 
 import os
+import ast
+import types
 import sys
 import json
 import shutil
@@ -48,11 +50,37 @@ BLOCKED_KEYWORDS = [
 ]
 
 
+class SecurityVisitor(ast.NodeVisitor):
+    def visit_Import(self, node):
+        raise ValueError("Imports are not allowed. Use the provided modules.")
+
+    def visit_ImportFrom(self, node):
+        raise ValueError("Imports are not allowed. Use the provided modules.")
+
+    def visit_Attribute(self, node):
+        if node.attr.startswith('_'):
+            raise ValueError(f"Access to private/dunder attribute '{node.attr}' is not allowed.")
+        self.generic_visit(node)
+
+    def visit_Name(self, node):
+        if node.id.startswith('_'):
+            raise ValueError(f"Access to private/dunder name '{node.id}' is not allowed.")
+        self.generic_visit(node)
+
 def _is_safe_code(code: str) -> tuple[bool, str]:
     code_lower = code.lower()
     for keyword in BLOCKED_KEYWORDS:
         if keyword.lower() in code_lower:
             return False, f"Blocked operation: '{keyword}'"
+
+    try:
+        tree = ast.parse(code)
+        SecurityVisitor().visit(tree)
+    except SyntaxError as e:
+        return False, f"Syntax error: {e}"
+    except ValueError as e:
+        return False, f"Security check failed: {e}"
+
     return True, "OK"
 
 
@@ -103,6 +131,21 @@ Python code:"""
         return f"ERROR: {e}"
 
 
+
+def _create_safe_module_proxy(module):
+    import types
+    class SafeProxy:
+        def __init__(self, mod):
+            self._mod = mod
+        def __getattr__(self, name):
+            if name.startswith('_'):
+                raise AttributeError(f"Access to private attribute '{name}' denied.")
+            val = getattr(self._mod, name)
+            if isinstance(val, types.ModuleType):
+                raise AttributeError(f"Access to submodule '{name}' denied.")
+            return val
+    return SafeProxy(module)
+
 def _execute_generated_code(code: str, *, player=None, reason: str = "") -> str:
     """Safely executes Gemini-generated desktop automation code."""
     safe, safety_reason = _is_safe_code(code)
@@ -119,17 +162,21 @@ def _execute_generated_code(code: str, *, player=None, reason: str = "") -> str:
         return message
 
     allowed_globals = {
-        "pyautogui": pyautogui,
+        "pyautogui": _create_safe_module_proxy(pyautogui),
         "Path": Path,
-        "shutil": shutil,
-        "ctypes": ctypes,
-        "time": __import__("time"),
-        "os": type("os", (), {
-            "path": os.path,
-            "listdir": os.listdir,
-            "getcwd": os.getcwd,
-            "environ": os.environ,
-        })(),
+        "shutil": _create_safe_module_proxy(shutil),
+        "time": _create_safe_module_proxy(__import__("time")),
+        "os": types.SimpleNamespace(
+            path=types.SimpleNamespace(
+                exists=os.path.exists,
+                join=os.path.join,
+                dirname=os.path.dirname,
+                basename=os.path.basename,
+                splitext=os.path.splitext
+            ),
+            listdir=os.listdir,
+            getcwd=os.getcwd,
+        ),
         "__builtins__": {
             "print": print,
             "len": len,
@@ -143,8 +190,6 @@ def _execute_generated_code(code: str, *, player=None, reason: str = "") -> str:
             "enumerate": enumerate,
             "sorted": sorted,
             "isinstance": isinstance,
-            "hasattr": hasattr,
-            "getattr": getattr,
             "max": max,
             "min": min,
             "sum": sum,
