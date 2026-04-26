@@ -19,7 +19,6 @@ import time
 import threading
 import cv2
 import mss
-import mss.tools
 import pyaudio
 from pathlib import Path
 

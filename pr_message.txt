@@ -1,0 +1,6 @@
+🧹 Code Health: Remove unused mss.tools import in screen_processor.py
+
+🎯 **What:** Removed the explicit `import mss.tools` statement from `actions/screen_processor.py`.
+💡 **Why:** The `mss.tools` module is implicitly available via `import mss` (which is also present in the file), making the explicit import redundant and unused as per flake8/linting checks. This cleans up dead code.
+✅ **Verification:** Ran `flake8 actions/screen_processor.py` to confirm no new linting errors or syntax errors were introduced, and ran an import check script to ensure the module still functions correctly and no regressions occurred.
+✨ **Result:** Improved maintainability and reduced unnecessary explicit module imports.
