@@ -201,16 +201,12 @@ def create_plan(goal: str, context: str = "") -> dict:
 
 
 def _fallback_plan(goal: str) -> dict:
-    print("[Planner] 🔄 Fallback plan")
     return {
-        "goal": goal,
         "steps": [
             {
-                "step": 1,
                 "tool": "web_search",
-                "description": f"Search for: {goal}",
                 "parameters": {"query": goal},
-                "critical": True
+                "description": "Information search"
             }
         ]
     }
