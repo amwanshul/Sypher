@@ -125,10 +125,23 @@ def _ask_gemini(task: str) -> str:
 
 def _run_silent(command: str, timeout: int = 20) -> str:
     try:
+        import shlex
         platform = _get_platform()
+        is_windows = platform == "windows"
+
+        try:
+            args = shlex.split(command, posix=not is_windows)
+        except ValueError:
+            # Fallback for unclosed quotes
+            args = command.split()
+
+        if is_windows:
+            args = [arg[1:-1] if (arg.startswith('"') and arg.endswith('"')) or (arg.startswith("'") and arg.endswith("'")) else arg for arg in args]
+
         if platform == "windows":
             is_ps = command.strip().lower().startswith("powershell")
             if is_ps:
+                import re
                 cmd_inner = re.sub(r'^powershell\s+"?', '', command, flags=re.IGNORECASE).rstrip('"')
                 result = subprocess.run(
                     ["powershell", "-NoProfile", "-Command", cmd_inner],
@@ -137,15 +150,14 @@ def _run_silent(command: str, timeout: int = 20) -> str:
                 )
             else:
                 result = subprocess.run(
-                    ["cmd", "/c", command],
+                    ["cmd", "/c"] + args,
                     capture_output=True, text=True,
                     encoding="cp1252", errors="replace",
                     timeout=timeout, cwd=str(Path.home())
                 )
         else:
-            shell = "/bin/zsh" if platform == "macos" else "/bin/bash"
             result = subprocess.run(
-                command, shell=True, executable=shell,
+                args, shell=False,
                 capture_output=True, text=True,
                 errors="replace", timeout=timeout,
                 cwd=str(Path.home())
@@ -219,8 +231,30 @@ def cmd_control(
         player.write_log(f"[CMD] {command[:60]}")
 
     if any(x in command.lower() for x in ["notepad", "explorer", "start "]):
-        subprocess.Popen(command, shell=True)
-        return f"Opened: {command}"
+        import shlex
+        is_windows = _get_platform() == "windows"
+        try:
+            args = shlex.split(command, posix=not is_windows)
+            if is_windows:
+                args = [arg[1:-1] if (arg.startswith('"') and arg.endswith('"')) or (arg.startswith("'") and arg.endswith("'")) else arg for arg in args]
+
+            if is_windows and args and args[0].lower() == "start":
+                import os
+                target = args[-1] if len(args) > 1 else ""
+                if target:
+                    if target.startswith("http"):
+                        import webbrowser
+                        webbrowser.open(target)
+                    elif hasattr(os, "startfile"):
+                        os.startfile(target)
+                    else:
+                        subprocess.Popen(["explorer", target], shell=False)
+                return f"Opened: {command}"
+
+            subprocess.Popen(args, shell=False)
+            return f"Opened: {command}"
+        except Exception as e:
+            return f"Error securely opening application: {e}"
 
     if visible:
         _run_visible(command)
