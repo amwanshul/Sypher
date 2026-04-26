@@ -646,7 +646,7 @@ class JarvisLive:
                 goal         = args.get("goal", "")
                 priority_str = args.get("priority", "normal").lower()
 
-                from agent.task_queue import get_queue, TaskPriority
+                from agent.task_queue import get_queue, TaskPriority, TaskRequest
                 priority_map = {
                     "low":    TaskPriority.LOW,
                     "normal": TaskPriority.NORMAL,
@@ -655,11 +655,7 @@ class JarvisLive:
                 priority = priority_map.get(priority_str, TaskPriority.NORMAL)
 
                 queue   = get_queue()
-                task_id = queue.submit(
-                    goal=goal,
-                    priority=priority,
-                    speak=self.speak,
-                )
+                task_id = queue.submit(TaskRequest(goal=goal, priority=priority, speak=self.speak))
                 result = f"Task started (ID: {task_id}). I'll update you as I make progress, sir."
 
             elif name == "web_search":

@@ -35,6 +35,15 @@ class Task:
     cancel_flag: threading.Event = field(compare=False, default_factory=threading.Event)
 
 
+@dataclass
+class TaskRequest:
+    goal: str
+    priority: TaskPriority = TaskPriority.NORMAL
+    speak: Callable | None = None
+    player: Any = None
+    on_complete: Callable | None = None
+
+
 class TaskQueue:
     def __init__(self, max_concurrent: int = 1):
         self._queue:        list[Task]       = []
@@ -71,24 +80,17 @@ class TaskQueue:
             self._condition.notify_all()
         print("[TaskQueue] 🔴 Stopped")
 
-    def submit(
-        self,
-        goal:        str,
-        priority:    TaskPriority = TaskPriority.NORMAL,
-        speak:       Callable | None = None,
-        player:      Any = None,
-        on_complete: Callable | None = None,
-    ) -> str:
+    def submit(self, request: TaskRequest) -> str:
 
         task_id = str(uuid.uuid4())[:8]
         task    = Task(
-            priority    = priority.value,
+            priority    = request.priority.value,
             created_at  = time.time(),
             task_id     = task_id,
-            goal        = goal,
-            speak       = speak,
-            player      = player,
-            on_complete = on_complete,
+            goal        = request.goal,
+            speak       = request.speak,
+            player      = request.player,
+            on_complete = request.on_complete,
         )
 
         with self._condition:
@@ -97,7 +99,7 @@ class TaskQueue:
             self._tasks[task_id] = task
             self._condition.notify()
 
-        print(f"[TaskQueue] 📥 Task queued: [{task_id}] {goal[:60]}")
+        print(f"[TaskQueue] 📥 Task queued: [{task_id}] {request.goal[:60]}")
         return task_id
 
     def cancel(self, task_id: str) -> bool:

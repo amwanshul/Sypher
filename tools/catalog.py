@@ -81,7 +81,7 @@ async def _screen_process_live(parameters: dict, player=None, speak=None, loop=N
 
 
 def _agent_task_sync(parameters: dict, player=None, speak=None) -> str:
-    from agent.task_queue import TaskPriority, get_queue
+    from agent.task_queue import TaskPriority, get_queue, TaskRequest
 
     goal = parameters.get("goal", "")
     priority_str = str(parameters.get("priority", "normal")).lower()
@@ -90,12 +90,7 @@ def _agent_task_sync(parameters: dict, player=None, speak=None) -> str:
         "normal": TaskPriority.NORMAL,
         "high": TaskPriority.HIGH,
     }
-    task_id = get_queue().submit(
-        goal=goal,
-        priority=priority_map.get(priority_str, TaskPriority.NORMAL),
-        speak=speak,
-        player=player,
-    )
+    task_id = get_queue().submit(TaskRequest(goal=goal, priority=priority_map.get(priority_str, TaskPriority.NORMAL), speak=speak, player=player))
     return f"Task started (ID: {task_id}). I'll update you as I make progress, sir."
 
 
