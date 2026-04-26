@@ -16,6 +16,8 @@ import json
 import re
 import time
 from pathlib import Path
+from dataclasses import dataclass
+
 
 from security.approval import require_untrusted_execution_approval
 
@@ -30,6 +32,15 @@ PROJECTS_DIR       = Path.home() / "Desktop" / "SypherProjects"
 MAX_FIX_ATTEMPTS   = 4
 MODEL_PLANNER      = "gemini-2.5-flash"
 MODEL_WRITER       = "gemini-2.5-flash-lite"
+
+
+
+@dataclass
+class ProjectContext:
+    description: str
+    language: str
+    project_dir: Path
+    files: list[dict]
 
 
 def _get_api_key() -> str:
@@ -152,22 +163,19 @@ JSON:"""
 def _write_file(
     file_path: str,
     file_description: str,
-    project_description: str,
-    all_files: list[dict],
-    language: str,
-    project_dir: Path
+    ctx: ProjectContext
 ) -> str:
     """Write one file. Returns the generated code."""
     model = _get_model(MODEL_WRITER)
 
     file_list = "\n".join(
-        f"  - {f['path']}: {f['description']}" for f in all_files
+        f"  - {f['path']}: {f['description']}" for f in ctx.files
     )
 
-    prompt = f"""You are an expert {language} developer.
+    prompt = f"""You are an expert {ctx.language} developer.
 Write the code for ONE specific file in a larger project.
 
-Project goal: {project_description}
+Project goal: {ctx.description}
 
 All files in this project:
 {file_list}
@@ -189,7 +197,7 @@ Code for {file_path}:"""
         code = _clean_code(response.text)
 
         # Save file
-        full_path = project_dir / file_path
+        full_path = ctx.project_dir / file_path
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_text(code, encoding="utf-8")
 
@@ -301,22 +309,19 @@ def _fix_file(
     file_path: str,
     current_code: str,
     error_output: str,
-    project_description: str,
-    all_files: list[dict],
-    language: str,
-    project_dir: Path
+    ctx: ProjectContext
 ) -> str:
     """Ask Gemini to fix a specific file based on error output."""
     model = _get_model(MODEL_PLANNER)
 
     file_list = "\n".join(
-        f"  - {f['path']}: {f['description']}" for f in all_files
+        f"  - {f['path']}: {f['description']}" for f in ctx.files
     )
 
-    prompt = f"""You are an expert {language} debugger.
+    prompt = f"""You are an expert {ctx.language} debugger.
 Fix the file below. It caused an error when the project was run.
 
-Project goal: {project_description}
+Project goal: {ctx.description}
 
 All files in this project:
 {file_list}
@@ -337,7 +342,7 @@ Fixed code:"""
         response = model.generate_content(prompt)
         fixed = _clean_code(response.text)
 
-        full_path = project_dir / file_path
+        full_path = ctx.project_dir / file_path
         full_path.write_text(fixed, encoding="utf-8")
 
         print(f"[DevAgent] 🔧 Fixed: {file_path}")
@@ -390,6 +395,13 @@ def _build_project(
     run_command = plan.get("run_command", f"python {entry_point}")
     dependencies = plan.get("dependencies", [])
 
+    ctx = ProjectContext(
+        description=description,
+        language=language,
+        project_dir=project_dir,
+        files=files
+    )
+
     log(f"Project: {proj_name} | Files: {len(files)} | Entry: {entry_point}")
 
     file_codes: dict[str, str] = {}
@@ -403,8 +415,7 @@ def _build_project(
         log(f"Writing {file_path}...")
         try:
             code = _write_file(
-                file_path, file_desc, description,
-                files, language, project_dir
+                file_path, file_desc, ctx
             )
             file_codes[file_path] = code
         except RateLimitError:
@@ -470,10 +481,7 @@ def _build_project(
                 error_file,
                 file_codes.get(error_file, ""),
                 last_output,
-                description,
-                files,
-                language,
-                project_dir
+                ctx
             )
             file_codes[error_file] = fixed
         except RateLimitError:
