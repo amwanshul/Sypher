@@ -23,6 +23,18 @@ import subprocess
 import platform
 from datetime import datetime, timedelta
 from pathlib import Path
+from dataclasses import dataclass
+
+
+@dataclass
+class FlightSearchConfig:
+    origin: str
+    destination: str
+    date: str
+    return_date: str | None
+    passengers: int
+    cabin: str
+
 
 
 def get_base_dir() -> Path:
@@ -107,12 +119,7 @@ def _parse_date(raw: str) -> str:
 
 
 def _build_google_flights_url(
-    origin:      str,
-    destination: str,
-    date:        str,
-    return_date: str | None = None,
-    passengers:  int        = 1,
-    cabin:       str        = "economy",
+    config: FlightSearchConfig
 ) -> str:
     """
     Builds a Google Flights URL with pre-filled search parameters.
@@ -124,19 +131,19 @@ def _build_google_flights_url(
         "business": "3",
         "first":    "4",
     }
-    cabin_code = cabin_map.get(cabin.lower(), "1")
+    cabin_code = cabin_map.get(config.cabin.lower(), "1")
 
     base = "https://www.google.com/travel/flights"
 
-    if return_date:
+    if config.return_date:
         url = (
-            f"{base}?q=Flights+from+{origin}+to+{destination}"
-            f"+on+{date}+returning+{return_date}"
+            f"{base}?q=Flights+from+{config.origin}+to+{config.destination}"
+            f"+on+{config.date}+returning+{config.return_date}"
             f"&curr=TRY"
         )
     else:
         url = (
-            f"{base}?q=Flights+from+{origin}+to+{destination}+on+{date}"
+            f"{base}?q=Flights+from+{config.origin}+to+{config.destination}+on+{config.date}"
             f"&curr=TRY"
         )
 
@@ -145,12 +152,7 @@ def _build_google_flights_url(
 
 
 def _search_flights_browser(
-    origin:      str,
-    destination: str,
-    date:        str,
-    return_date: str | None,
-    passengers:  int,
-    cabin:       str,
+    config: FlightSearchConfig
 ) -> tuple[str, str]:
     """
     Opens Google Flights in browser, waits for results, scrapes text.
@@ -159,9 +161,7 @@ def _search_flights_browser(
     from actions.browser_control import browser_control
     import time
 
-    url = _build_google_flights_url(
-        origin, destination, date, return_date, passengers, cabin
-    )
+    url = _build_google_flights_url(config)
 
     print(f"[FlightFinder] 🌐 Opening: {url}")
     browser_control({"action": "go_to", "url": url})
@@ -172,10 +172,8 @@ def _search_flights_browser(
 
 
 def _parse_flights_with_gemini(
-    raw_text:    str,
-    origin:      str,
-    destination: str,
-    date:        str,
+    raw_text: str,
+    config: FlightSearchConfig,
 ) -> list[dict]:
     """
     Sends raw page text to Gemini and extracts structured flight data.
@@ -196,7 +194,7 @@ def _parse_flights_with_gemini(
     truncated = raw_text[:12000]
 
     prompt = (
-        f"Extract flight options from {origin} to {destination} on {date} "
+        f"Extract flight options from {config.origin} to {config.destination} on {config.date} "
         f"from this Google Flights page text:\n\n{truncated}\n\n"
         f"Return a JSON array of up to 5 flights:\n"
         f'[{{"airline": "...", "departure": "HH:MM", "arrival": "HH:MM", '
@@ -217,19 +215,17 @@ def _parse_flights_with_gemini(
 
 
 def _format_spoken(
-    flights:     list[dict],
-    origin:      str,
-    destination: str,
-    date:        str,
+    flights: list[dict],
+    config: FlightSearchConfig,
 ) -> str:
     """Formats flights for spoken output — concise and natural."""
     if not flights:
         return (
-            f"I couldn't find any flights from {origin} to {destination} "
-            f"on {date}, sir. The page may not have loaded correctly."
+            f"I couldn't find any flights from {config.origin} to {config.destination} "
+            f"on {config.date}, sir. The page may not have loaded correctly."
         )
 
-    lines = [f"Here are the flights from {origin} to {destination} on {date}, sir."]
+    lines = [f"Here are the flights from {config.origin} to {config.destination} on {config.date}, sir."]
 
     for i, f in enumerate(flights[:5], 1):
         airline   = f.get("airline",   "Unknown airline")
@@ -264,12 +260,9 @@ def _format_spoken(
 
 
 def _format_notepad(
-    flights:     list[dict],
-    origin:      str,
-    destination: str,
-    date:        str,
-    return_date: str | None,
-    page_url:    str,
+    flights: list[dict],
+    config: FlightSearchConfig,
+    page_url: str,
 ) -> str:
     """Formats flights for Notepad — detailed and readable."""
     from datetime import datetime as dt
@@ -277,11 +270,11 @@ def _format_notepad(
     lines = [
         "SYPHER - Flight Search Results",
         "─" * 50,
-        f"Route     : {origin} → {destination}",
-        f"Date      : {date}",
+        f"Route     : {config.origin} → {config.destination}",
+        f"Date      : {config.date}",
     ]
-    if return_date:
-        lines.append(f"Return    : {return_date}")
+    if config.return_date:
+        lines.append(f"Return    : {config.return_date}")
     lines += [
         f"Searched  : {dt.now().strftime('%Y-%m-%d %H:%M')}",
         f"Source    : {page_url}",
@@ -309,12 +302,12 @@ def _format_notepad(
     return "\n".join(lines)
 
 
-def _save_to_notepad(content: str, origin: str, destination: str) -> str:
+def _save_to_notepad(content: str, config: FlightSearchConfig) -> str:
     """Saves flight results to Desktop and opens in default text editor."""
     from datetime import datetime
 
     ts       = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"flights_{origin}_{destination}_{ts}.txt".replace(" ", "_")
+    filename = f"flights_{config.origin}_{config.destination}_{ts}.txt".replace(" ", "_")
     desktop  = Path.home() / "Desktop"
     desktop.mkdir(parents=True, exist_ok=True)
     filepath = desktop / filename
@@ -377,19 +370,26 @@ def flight_finder(
     date        = _parse_date(date_raw)
     return_date = _parse_date(return_raw) if return_raw else None
 
+    config = FlightSearchConfig(
+        origin=origin,
+        destination=destination,
+        date=date,
+        return_date=return_date,
+        passengers=passengers,
+        cabin=cabin
+    )
+
     if player:
-        player.write_log(f"[FlightFinder] {origin} → {destination} on {date}")
+        player.write_log(f"[FlightFinder] {config.origin} → {config.destination} on {config.date}")
 
     if speak:
-        speak(f"Searching flights from {origin} to {destination} on {date}, sir.")
+        speak(f"Searching flights from {config.origin} to {config.destination} on {config.date}, sir.")
 
-    print(f"[FlightFinder] ▶️ {origin} → {destination} | {date} | {cabin} | {passengers} pax")
+    print(f"[FlightFinder] ▶️ {config.origin} → {config.destination} | {config.date} | {config.cabin} | {config.passengers} pax")
 
     try:
    
-        raw_text, page_url = _search_flights_browser(
-            origin, destination, date, return_date, passengers, cabin
-        )
+        raw_text, page_url = _search_flights_browser(config)
 
         if not raw_text:
             return "Could not retrieve flight data, sir. The page may not have loaded."
@@ -397,19 +397,17 @@ def flight_finder(
         if speak:
             speak("Analysing the results now.")
 
-        flights = _parse_flights_with_gemini(raw_text, origin, destination, date)
+        flights = _parse_flights_with_gemini(raw_text, config)
 
-        spoken = _format_spoken(flights, origin, destination, date)
+        spoken = _format_spoken(flights, config)
         if speak:
             speak(spoken)
 
         result = spoken
 
         if save and flights:
-            notepad_content = _format_notepad(
-                flights, origin, destination, date, return_date, page_url
-            )
-            saved_path = _save_to_notepad(notepad_content, origin, destination)
+            notepad_content = _format_notepad(flights, config, page_url)
+            saved_path = _save_to_notepad(notepad_content, config)
             result += f" Results saved to Desktop: {saved_path}"
 
         return result
