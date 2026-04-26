@@ -13,8 +13,10 @@ def get_base_dir() -> Path:
         return Path(sys.executable).parent
     return Path(__file__).resolve().parent.parent
 
-BASE_DIR        = get_base_dir()
+
+BASE_DIR = get_base_dir()
 API_CONFIG_PATH = BASE_DIR / "config" / "api_keys.json"
+
 
 def _get_api_key() -> str:
     with open(API_CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -39,7 +41,6 @@ def _gemini_search(query: str) -> str:
     return text.strip()
 
 
-
 def _ddg_search(query: str, max_results: int = 6) -> list:
     try:
         from ddgs import DDGS
@@ -55,20 +56,31 @@ def _ddg_search(query: str, max_results: int = 6) -> list:
             })
     return results
 
+
 def _format_ddg(query: str, results: list) -> str:
     if not results:
         return f"No results found for: {query}"
     lines = [f"Search results for: {query}\n"]
     for i, r in enumerate(results, 1):
-        if r.get("title"):   lines.append(f"{i}. {r['title']}")
-        if r.get("snippet"): lines.append(f"   {r['snippet']}")
-        if r.get("url"):     lines.append(f"   {r['url']}")
+        if r.get("title"):
+            lines.append(f"{i}. {r['title']}")
+        if r.get("snippet"):
+            lines.append(f"   {r['snippet']}")
+        if r.get("url"):
+            lines.append(f"   {r['url']}")
         lines.append("")
     return "\n".join(lines).strip()
 
 
 def _compare(items: list, aspect: str) -> str:
-    query = f"Compare {', '.join(items)} in terms of {aspect}. Give specific facts and data."
+    if not items:
+        return ""
+    if len(items) == 1:
+        return f"Sadece bir sonuç var: {items[0]}"
+    query = (
+        f"Compare {', '.join(items)} in terms of {aspect}. "
+        "Give specific facts and data."
+    )
     try:
         return _gemini_search(query)
     except Exception as e:
@@ -76,7 +88,9 @@ def _compare(items: list, aspect: str) -> str:
         all_results = {}
         for item in items:
             try:
-                all_results[item] = _ddg_search(f"{item} {aspect}", max_results=3)
+                all_results[item] = _ddg_search(
+                    f"{item} {aspect}", max_results=3
+                )
             except Exception:
                 all_results[item] = []
         lines = [f"Comparison — {aspect.upper()}\n{'─'*40}"]
@@ -95,9 +109,9 @@ def web_search(
     session_memory=None,
 ) -> str:
     params = parameters or {}
-    query  = params.get("query", "").strip()
-    mode   = params.get("mode", "search").lower()
-    items  = params.get("items", [])
+    query = params.get("query", "").strip()
+    mode = params.get("mode", "search").lower()
+    items = params.get("items", [])
     aspect = params.get("aspect", "general")
 
     if not query and not items:
@@ -126,7 +140,7 @@ def web_search(
         except Exception as e:
             print(f"[WebSearch] ⚠️ Gemini failed ({e}), trying DDG...")
             results = _ddg_search(query)
-            result  = _format_ddg(query, results)
+            result = _format_ddg(query, results)
             print(f"[WebSearch] ✅ DDG: {len(results)} results.")
             return result
 
