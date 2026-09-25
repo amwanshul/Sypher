@@ -51,3 +51,28 @@ def test_run_task_records_failure_and_releases_active_slot():
     assert task.error == "executor failed"
     assert task.result is None
     assert queue._active_count == 0
+
+
+def test_run_task_honors_cancellation_and_skips_callback():
+    completed = []
+    queue = TaskQueue()
+    task_id = queue.submit(
+        TaskRequest(
+            goal="run me",
+            priority=TaskPriority.NORMAL,
+            on_complete=lambda task_id, result: completed.append((task_id, result)),
+        )
+    )
+    task = queue._tasks[task_id]
+    task.status = TaskStatus.RUNNING
+    task.cancel_flag.set()
+    queue._active_count = 1
+    queue._get_executor = lambda: _FakeExecutor()
+
+    queue._run_task(task)
+
+    assert task.status == TaskStatus.CANCELLED
+    assert task.result is None
+    assert task.error == ""
+    assert completed == []
+    assert queue._active_count == 0
