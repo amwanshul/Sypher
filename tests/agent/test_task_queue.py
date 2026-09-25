@@ -37,3 +37,19 @@ def test_submit_sorts_by_priority():
 
     assert queue._queue[2].task_id == id_low
     assert queue._queue[2].priority == TaskPriority.LOW.value
+
+
+def test_get_status_returns_snapshot_and_none_for_unknown_task():
+    queue = TaskQueue()
+    task_id = queue.submit(TaskRequest(goal="inspect me", priority=TaskPriority.HIGH))
+
+    status = queue.get_status(task_id)
+
+    assert status == {
+        "task_id": task_id,
+        "goal": "inspect me",
+        "status": TaskStatus.PENDING.value,
+        "result": None,
+        "error": "",
+    }
+    assert queue.get_status("missing") is None
