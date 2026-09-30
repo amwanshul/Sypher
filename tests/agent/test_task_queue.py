@@ -53,3 +53,17 @@ def test_get_status_returns_snapshot_and_none_for_unknown_task():
         "error": "",
     }
     assert queue.get_status("missing") is None
+
+
+def test_get_all_statuses_returns_all_tracked_tasks():
+    queue = TaskQueue()
+    first = queue.submit(TaskRequest(goal="first", priority=TaskPriority.HIGH))
+    second = queue.submit(TaskRequest(goal="second", priority=TaskPriority.LOW))
+    queue.cancel(second)
+
+    statuses = {item["task_id"]: item["status"] for item in queue.get_all_statuses()}
+
+    assert statuses == {
+        first: TaskStatus.PENDING.value,
+        second: TaskStatus.CANCELLED.value,
+    }
