@@ -16,3 +16,8 @@ def test_cancel_pending_task_marks_it_cancelled_and_excludes_it_from_dispatch():
     assert queue.pending_count() == 0
     assert queue._next_task() is None
     assert queue.cancel(task_id) is False
+
+
+def test_cancel_unknown_task_returns_false():
+    queue = TaskQueue()
+    assert queue.cancel("missing") is False
